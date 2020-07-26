@@ -10,10 +10,13 @@
         margin: 1em;
     }
 
+    p {
+        font-family: sans-serif;
+    }
+
     .container {
         margin: 0 auto;
         width: 80rem;
-        background-color: aliceblue;
     }
 
     form {
@@ -46,6 +49,9 @@
 <body>
     <div class="container">
         <h1>HEXDEC</h1>
+        <p>A simple hexa-decimal to decimal convertor. A faster way of reading your hex dump with custom parsing by defining
+        presets.</p>
+        <p>Help: <a href="https://github.com/palaniraja/hexdec/">Readme</a></p>
         <form>
             <label>Hex:</label>
             <textarea id="txtHex" placeholder="68 3C 6D 74" autofocus="true"></textarea>
