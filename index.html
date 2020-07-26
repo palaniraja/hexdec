@@ -4,10 +4,138 @@
     <title>HEX to DEC</title>
 </head>
 <style type="text/css">
+    body {
+        font-family: monospace;
+        font-size: 1.2em;
+        margin: 1em;
+    }
 
+    .container {
+        margin: 0 auto;
+        width: 80rem;
+        background-color: aliceblue;
+    }
+
+    form {
+        width: 80rem;
+    }
+
+    label,
+    textarea {
+        display: block;
+    }
+
+    label {
+        font-weight: bold;
+        margin-top: 0.4em;
+    }
+
+    textarea {
+        width: 100%;
+        height: 4em;
+        font-size: 1.5em;
+    }
 </style>
-
 <body>
-<h1>HEXDEC</h1>
+    <div class="container">
+        <h1>HEXDEC</h1>
+        <form>
+            <label>Hex:</label>
+            <textarea id="txtHex" placeholder="68 3C 6D 74" autofocus="true"></textarea>
+            <label>Preset:</label>
+            <textarea id="txtPreset" placeholder="2,1,1"></textarea>
+            <!-- <div>
+                <button>Save</button> 
+                <button>Preset 1</button>
+                <button>Preset 2</button>
+                <button>Preset 3</button>
+            </div> -->
+            <label>Dec:</label>
+            <textarea id="txtDec" placeholder=""></textarea>
+            <p id="pOut"></p>
+        </form>
+    </div>
+<script type="text/javascript">
+    var app = {
+        el: {},
+        store: {},
+        actions: {}
+    };
+
+    app.actions.processInput = (event) => {
+        var inputVal = event.target.value.replace(/\ /g, "").toUpperCase();
+        var formattedVal = inputVal.match(/.{1,2}/g)
+        // console.log("inputVal: " + inputVal + " formattedVal: " + formattedVal);
+        app.store.input = formattedVal
+        formattedVal = formattedVal.join(" ");
+        event.target.value = formattedVal;
+        app.calc()
+    }
+
+    app.actions.processPreset = (event) => {
+        var inputVal = event.target.value.split(",")
+        app.store.preset = inputVal
+
+        app.store.mode = "LE" //default to little endian
+        if (inputVal.length > 0) {
+            if (inputVal[0] == "b") {
+                app.store.mode = "BE" //big endian
+                inputVal.shift() //remove endian info, just keep presets
+            }
+            app.store.preset = inputVal
+            app.calc()
+        }
+        
+    }
+
+    app.calc = () => {
+        console.log("CALC: Input: " + app.store.input + " Preset: " + app.store.preset + " Endian: " + app.store.mode)
+
+        if (app.store.preset && app.store.preset.length > 0) {
+            app.store.output = [];
+
+            var input = app.store.input.slice(0)
+            var output = [];
+            
+            app.store.preset.forEach(packetSize => {
+                packet = input.slice(0, packetSize)
+                input.splice(0, packetSize);
+                console.log("size: " + packetSize + " process: " + packet + " input: " + input)
+                if (app.store.mode == "LE") {
+                    packet.reverse()
+                }
+                var hex = packet.join("")
+                var out = parseInt(hex, 16)
+                app.store.output.push(out)
+                console.log("hex: " + hex + " output: " + out)
+
+            });
+
+            app.el.txtDec.value = app.store.output.join(" ")
+        }
+    }
+
+    app.bootstrap = () => {
+        
+        app.el.txtHex = document.getElementById('txtHex');
+        app.el.txtPreset = document.getElementById('txtPreset');
+        app.el.txtDec = document.getElementById('txtDec');
+        app.el.pOut = document.getElementById('pOut');
+        
+        app.el.txtHex.oninput = app.actions.processInput;
+        app.el.txtPreset.oninput = app.actions.processPreset;
+        
+        //Testing 
+        // app.el.txtHex.value = "68 3C 6D 74" 
+        // app.el.txtPreset.value = "2,1,1" //b,2,1,1
+        // app.store.input = ["68", "3C", "6D", "74"]
+        // app.actions.processPreset({ target: app.el.txtPreset })
+        // app.actions.processInput({ target: app.el.txtHex })
+        
+        console.log("HEXDEC v0.1 loaded.");
+    }
+
+    app.bootstrap();
+</script>
 </body>
 </html>
