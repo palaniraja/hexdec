@@ -18,6 +18,6 @@ converts to `3C68 6D 74` => `15464 109 116`
 
 Hex: `68 3C 6D 74`
 
-Preset: `b, 2,1,1` //to treat your bytes as big-endian
+Preset: `b,2,1,1` //to treat your bytes as big-endian
 
 `683C 6D 74` => `26684 109 116`
