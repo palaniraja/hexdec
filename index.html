@@ -27,13 +27,20 @@
 
     label {
         font-weight: bold;
-        margin-top: 0.4em;
+        margin-top: 1em;
     }
 
     textarea {
         width: 100%;
         height: 4em;
         font-size: 1.5em;
+    }
+
+    #txtPreset {
+        height: 2em;        
+    }
+    .presets button {
+        margin: 0 0.25em;
     }
 </style>
 <body>
@@ -44,12 +51,11 @@
             <textarea id="txtHex" placeholder="68 3C 6D 74" autofocus="true"></textarea>
             <label>Preset:</label>
             <textarea id="txtPreset" placeholder="2,1,1"></textarea>
-            <!-- <div>
-                <button>Save</button> 
-                <button>Preset 1</button>
-                <button>Preset 2</button>
-                <button>Preset 3</button>
-            </div> -->
+            <div>
+                <button id="btnSavePreset">Save</button>
+                <span class="presets">
+                </span>
+            </div>
             <label>Dec:</label>
             <textarea id="txtDec" placeholder=""></textarea>
             <p id="pOut"></p>
@@ -59,7 +65,7 @@
     var app = {
         el: {},
         store: {},
-        actions: {}
+        actions: {},
     };
 
     app.actions.processInput = (event) => {
@@ -115,15 +121,73 @@
         }
     }
 
+    app.actions.savePreset = (event) => {
+        app.savePreset(app.store.preset.join(","));
+        event.preventDefault();
+    }
+
+    app.savePreset = (presetStr) => {
+        console.log(presetStr)
+        var mode = ""
+        if (app.store.mode == "BE") {
+            mode = "b,"
+        }
+        app.store.savedPresets.push(mode+presetStr);
+        localStorage.setItem("presets", JSON.stringify(app.store.savedPresets));
+        console.log("preset: " + presetStr);
+        app.loadPresets()
+    }
+
+    app.loadPresetAtIndex = (index) => {
+        if (app.store.savedPresets && app.store.savedPresets[index]) {
+            console.log("preset: " + app.store.savedPresets[index])
+            app.el.txtPreset.value = app.store.savedPresets[index];
+            app.actions.processPreset({target: app.el.txtPreset})
+        }
+        
+    }
+
+    app.loadPresets = () => {
+        app.el.btnPresets.innerHTML = '';
+        app.store.savedPresets = JSON.parse(localStorage.getItem("presets"))
+        if (app.store.savedPresets && app.store.savedPresets.length) {
+            console.log("total presets: " + app.store.savedPresets.length)
+            var btnPresets = ""
+            app.store.savedPresets.forEach ( (preset, idx) => {
+                console.log(preset)
+                // btnPresets += "<button>P:" + preset.split(",").length +"</button> "
+                btn = document.createElement('button')
+                btn.appendChild(document.createTextNode("P: " + preset.split(",").length))
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    app.loadPresetAtIndex(idx);
+                });
+                app.el.btnPresets.appendChild(btn);
+            })
+            // app.el.btnPresets.innerHTML = btnPresets
+            
+        }
+        else {
+            app.store.savedPresets = [];
+        }
+    }
+
     app.bootstrap = () => {
         
         app.el.txtHex = document.getElementById('txtHex');
         app.el.txtPreset = document.getElementById('txtPreset');
         app.el.txtDec = document.getElementById('txtDec');
         app.el.pOut = document.getElementById('pOut');
+
+        app.el.btnSavePreset = document.getElementById('btnSavePreset');
+        app.el.btnPresets = document.querySelector('.presets');
+        app.el.btnSavePreset.addEventListener('click', app.actions.savePreset)
         
         app.el.txtHex.oninput = app.actions.processInput;
         app.el.txtPreset.oninput = app.actions.processPreset;
+
+        app.store.savedPresets = []
+        app.loadPresets()
         
         //Testing 
         // app.el.txtHex.value = "68 3C 6D 74" 
@@ -132,7 +196,7 @@
         // app.actions.processPreset({ target: app.el.txtPreset })
         // app.actions.processInput({ target: app.el.txtHex })
         
-        console.log("HEXDEC v0.1 loaded.");
+        console.log("HEXDEC v0.2 loaded.");
     }
 
     app.bootstrap();
