@@ -12,6 +12,7 @@
 
     p {
         font-family: sans-serif;
+        font-size: 1em;
     }
 
     .container {
@@ -36,22 +37,48 @@
     textarea {
         width: 100%;
         height: 4em;
-        font-size: 1.5em;
+        font-size: 1.25em;
     }
 
     #txtPreset {
-        height: 2em;        
+        height: 2.5em;        
     }
     .presets button {
-        margin: 0 0.25em;
+        margin: 0.25em 0.25em;
+    }
+
+    #pOut table {
+        border: 1px solid gray;
+        border-collapse: collapse;
+        font-family: monospace;
+    }
+    #pOut table th {
+        text-align: center;
+        border: 1px solid gray;
+        text-transform:uppercase;
+    }
+    #pOut table td {
+        border: 1px solid gray;
+        padding: 0 0.25em;
+        text-align: right;
+        font-size: 1.25em;
+    }
+
+    #pOut tr:nth-child(odd) {
+        background-color: lightgray;
+    }
+
+    sup{
+        color: gray;
+        cursor: pointer;
     }
 </style>
 <body>
     <div class="container">
-        <h1>HEXDEC</h1>
-        <p>A simple hexa-decimal to decimal convertor. A faster way of reading your hex dump with custom parsing by defining
+        <h1>HEXDEC<sup>?</sup></h1>
+        <p class="help">A simple hexa-decimal to decimal convertor. A faster way of reading your hex dump with custom parsing by defining
         presets.</p>
-        <p>Help: <a href="https://github.com/palaniraja/hexdec/">Readme</a></p>
+        <p class="help">Help: <a href="https://github.com/palaniraja/hexdec/">Readme</a></p>
         <form>
             <label>Hex:</label>
             <textarea id="txtHex" placeholder="68 3C 6D 74" autofocus="true"></textarea>
@@ -74,6 +101,9 @@
         actions: {},
     };
 
+    var showHelp = "true";
+        
+
     app.actions.processInput = (event) => {
         var inputVal = event.target.value.replace(/\ /g, "").toUpperCase();
         var formattedVal = inputVal.match(/.{1,2}/g)
@@ -85,9 +115,23 @@
     }
 
     app.actions.processPreset = (event) => {
-        var inputVal = event.target.value.split(",")
-        app.store.preset = inputVal
+        var preset = event.target.value
+        console.log("proc preset: " + preset)
+        var inputHeader = "";
+        var inputVal = "";
+        if (preset.split("\n").length > 1) {
+            inputHeader = preset.split("\n")[0];
+            inputVal = preset.split("\n")[1].split(",");
+            app.store.presetHeader = inputHeader
+        }
+        else {
+            inputVal = preset.split(",")
+            app.store.presetHeader = ""
+        }
 
+        app.store.preset = inputVal
+        console.log("Header: " + app.store.presetHeader + " Preset: " + app.store.preset)
+        
         app.store.mode = "LE" //default to little endian
         if (inputVal.length > 0) {
             if (inputVal[0] == "b") {
@@ -101,13 +145,22 @@
     }
 
     app.calc = () => {
-        console.log("CALC: Input: " + app.store.input + " Preset: " + app.store.preset + " Endian: " + app.store.mode)
+        console.log("CALC: Input: " + app.store.input + " Preset: " + app.store.preset + " Header: " + app.store.presetHeader + " Endian: " + app.store.mode)
 
         if (app.store.preset && app.store.preset.length > 0) {
             app.store.output = [];
 
             var input = app.store.input.slice(0)
             var output = [];
+
+            var tableOutput = ""
+            if (app.store.presetHeader.length) {
+                tableOutput += "<table><tr>"
+                app.store.presetHeader.split(",").forEach(h => {
+                    tableOutput += "<th>" + h + "</th>"
+                });
+                 tableOutput += "</tr>"
+            }
             
             app.store.preset.forEach(packetSize => {
                 packet = input.slice(0, packetSize)
@@ -124,6 +177,19 @@
             });
 
             app.el.txtDec.value = app.store.output.join(" ")
+
+            if (app.store.presetHeader.length) {
+                tableOutput += "<tr>"
+                app.el.txtDec.value.split(" ").forEach(d => {
+                    tableOutput += "<td>" + d + "</td>"
+                });
+                tableOutput += "</tr>"
+                tableOutput += "</table>"
+                app.el.pOut.innerHTML = tableOutput;
+            }
+            else{
+                app.el.pOut.innerHTML = ""
+            }
         }
     }
 
@@ -135,10 +201,14 @@
     app.savePreset = (presetStr) => {
         console.log(presetStr)
         var mode = ""
+        var header = ""
         if (app.store.mode == "BE") {
             mode = "b,"
         }
-        app.store.savedPresets.push(mode+presetStr);
+        if (app.store.presetHeader.length) {
+            header = app.store.presetHeader + "\n";
+        }
+        app.store.savedPresets.push(header+mode+presetStr);
         localStorage.setItem("presets", JSON.stringify(app.store.savedPresets));
         console.log("preset: " + presetStr);
         app.loadPresets()
@@ -178,6 +248,11 @@
         }
     }
 
+    app.showHelp = (display) => {
+        document.querySelectorAll("p.help").forEach(el => {
+            el.style.display = display == "false" ? "none" : "block";
+        });
+    };
     app.bootstrap = () => {
         
         app.el.txtHex = document.getElementById('txtHex');
@@ -194,15 +269,29 @@
 
         app.store.savedPresets = []
         app.loadPresets()
+        if (localStorage.getItem("showHelp") != undefined)  {
+            showHelp = localStorage.getItem("showHelp")
+        }
+        
+        document.querySelectorAll('sup').forEach(el => {
+            el.onclick = () => {
+                showHelp = showHelp == "false" ? "true" : "false";
+                localStorage.setItem("showHelp", showHelp);
+                app.showHelp(showHelp);
+            }
+        });
+        
+        app.showHelp(showHelp);
         
         //Testing 
-        // app.el.txtHex.value = "68 3C 6D 74" 
-        // app.el.txtPreset.value = "2,1,1" //b,2,1,1
+        // app.el.txtHex.value = "68 3C 6D 74 11 11 11 11 11 11" 
+        // // app.el.txtPreset.value = "2,1,1" //b,2,1,1
+        // app.el.txtPreset.value = "One,Two,Three\n2,1,1" //b,2,1,1
         // app.store.input = ["68", "3C", "6D", "74"]
         // app.actions.processPreset({ target: app.el.txtPreset })
         // app.actions.processInput({ target: app.el.txtHex })
         
-        console.log("HEXDEC v0.2 loaded.");
+        console.log("HEXDEC v0.4 loaded.");
     }
 
     app.bootstrap();
